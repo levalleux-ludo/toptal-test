@@ -1,9 +1,10 @@
 const { expect } = require("chai");
+const { BigNumber } = require("ethers");
 const hre = require("hardhat");
 const { revertMessage } = require("./utils");
 const ethers = hre.ethers;
 
-let deployer, accoun1, account2;
+let deployer, account1, account2;
 let deployerAddr, account1Addr, account2Addr;
 let initialOwner;
 let BadiumFactory;
@@ -111,3 +112,55 @@ describe('Badium Ownership', async() => {
         await expect(badium.connect(deployer).transferOwnership(account2Addr)).to.be.revertedWith(revertMessage('Ownable: caller is not the owner'));
     });
 });
+
+describe('Badium total supply / mint / burn', async() => {
+    before('', async() => {
+        await initTestVariables();
+        await createContract();
+    });
+    it('Verify totalSupply', async() => {
+        expect((await badium.totalSupply()).toString()).to.equal(initialSupply.toString() + '0'.repeat(decimals));
+    });
+    it('Verify Another user can not burn all tokens', async() => {
+        await expect(badium.connect(account1).burnAll()).to.be.revertedWith(revertMessage('Ownable: caller is not the owner'));
+    });
+    it('Verify The owner can burn all tokens', async() => {
+        expect(await badium.owner()).to.equal(deployerAddr);
+        expect((await badium.balanceOf(account1Addr)).toString()).to.not.equal('0');
+        await badium.connect(deployer).burnAll();
+        expect((await badium.totalSupply()).toString()).to.equal('0');
+        expect((await badium.balanceOf(deployerAddr)).toNumber()).to.equal(0);
+        expect((await badium.balanceOf(account1Addr)).toString()).to.equal('0');
+        expect((await badium.balanceOf(account2Addr)).toNumber()).to.equal(0);
+    });
+    it('Verify The owner can burn all tokens again', async() => {
+        expect(await badium.owner()).to.equal(deployerAddr);
+        expect((await badium.balanceOf(account1Addr)).toString()).to.equal('0');
+        await badium.connect(deployer).burnAll();
+        expect((await badium.totalSupply()).toString()).to.equal('0');
+        expect((await badium.balanceOf(deployerAddr)).toNumber()).to.equal(0);
+        expect((await badium.balanceOf(account1Addr)).toString()).to.equal('0');
+        expect((await badium.balanceOf(account2Addr)).toNumber()).to.equal(0);
+    });
+    it('Verify The token contract owner can mint N tokens, hence increasing the total supply', async() => {
+        const amountToMint = BigNumber.from(2 ** 32 - 1).mul(BigNumber.from(10).pow(18));
+        const accountTo = account1Addr;
+        expect(await badium.owner()).to.equal(deployerAddr);
+        const totalSupplyBefore = await badium.totalSupply();
+        const balance1Before = await badium.balanceOf(accountTo);
+        await badium.connect(deployer).mint(accountTo, amountToMint);
+        expect((await badium.totalSupply()).toString()).to.equal(totalSupplyBefore.add(amountToMint).toString());
+        expect((await badium.balanceOf(accountTo)).toString()).to.equal(balance1Before.add(amountToMint).toString());
+    });
+    it('Verify Another user cannot mint tokens', async() => {
+        const amountToMint = BigNumber.from(2 ** 32 - 1).mul(BigNumber.from(10).pow(18));
+        const accountTo = account1Addr;
+        expect(await badium.owner()).to.equal(deployerAddr);
+        const totalSupplyBefore = await badium.totalSupply();
+        const balance1Before = await badium.balanceOf(accountTo);
+        await expect(badium.connect(account1).mint(accountTo, amountToMint)).to.be.revertedWith(revertMessage('Ownable: caller is not the owner'));
+        expect((await badium.totalSupply()).toString()).to.equal(totalSupplyBefore.toString());
+        expect((await badium.balanceOf(accountTo)).toString()).to.equal(balance1Before.toString());
+    });
+
+})

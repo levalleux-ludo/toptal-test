@@ -45,7 +45,7 @@ I understand from the requirements regarding the **initial total supply** that:
 
 A few tests to check the standard ERC20 features: get balances, transfers, allowances
   
-### Ownership (both Token and Market contract)
+### Ownership (both Token and Market contracts)
 
 - Initial owner is the deployer account
 
@@ -57,15 +57,15 @@ A few tests to check the standard ERC20 features: get balances, transfers, allow
 
 - The initial total supply is 10000000
 
-- The token contract owner can burn all tokens
-
 - Another user can not burn all tokens
+
+- The token contract owner can burn all tokens
 
 - The token contract owner can mint N tokens, hence increasing the total supply
 
 - Another user cannot mint tokens
 
-### Buying token/token price
+### Buying token/token price (Market Contract)
 
 - A user can buy a given amount of tokens at a price of 0.01 ETH
 
@@ -79,7 +79,7 @@ A few tests to check the standard ERC20 features: get balances, transfers, allow
 
 - Another user cannot withdraw the contract’s balance
 
-### Transfer
+### Transfer (Token Contract)
 
 - The owner can transfer N tokens from Addr1 to Addr2
 

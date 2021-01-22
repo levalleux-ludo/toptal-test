@@ -3,7 +3,7 @@ const hre = require("hardhat");
 const { revertMessage } = require("./utils");
 const ethers = hre.ethers;
 
-let deployer, accoun1, account2;
+let deployer, account1, account2;
 let deployerAddr, account1Addr, account2Addr;
 let MarketFactory;
 let market;
