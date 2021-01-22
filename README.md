@@ -41,6 +41,10 @@ I understand from the requirements regarding the **initial total supply** that:
 
 ## Tests list
 
+### ERC20 Standard
+
+A few tests to check the standard ERC20 features: get balances, transfers, allowances
+  
 ### Ownership
 
 - The owner can transfer the contract ownership to another account
