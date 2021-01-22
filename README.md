@@ -45,21 +45,23 @@ I understand from the requirements regarding the **initial total supply** that:
 
 A few tests to check the standard ERC20 features: get balances, transfers, allowances
   
-### Ownership
+### Ownership (both Token and Market contract)
 
-- The owner can transfer the contract ownership to another account
+- Initial owner is the deployer account
+
+- The contract's owner can transfer the ownership to another account
 
 - Another user cannot transfer the contract ownership to another account
 
-### Total supply / mint / burn
+### Total supply / mint / burn (Token contract)
 
 - The initial total supply is 10000000
 
-- The owner can burn all tokens
+- The token contract owner can burn all tokens
 
 - Another user can not burn all tokens
 
-- The owner can mint N tokens, hence increasing the total supply
+- The token contract owner can mint N tokens, hence increasing the total supply
 
 - Another user cannot mint tokens
 

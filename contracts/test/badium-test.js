@@ -3,8 +3,8 @@ const hre = require("hardhat");
 const { revertMessage } = require("./utils");
 const ethers = hre.ethers;
 
-let owner, accoun1, account2;
-let ownerAddr, account1Addr, account2Addr;
+let deployer, accoun1, account2;
+let deployerAddr, account1Addr, account2Addr;
 let initialOwner;
 let BadiumFactory;
 let badium;
@@ -15,8 +15,8 @@ const initialSupply = 10000000;
 
 describe("Badium Token Deployment", async() => {
     before('', async() => {
-        [owner, account1, account2] = await ethers.getSigners();
-        ownerAddr = await owner.getAddress();
+        [deployer, account1, account2] = await ethers.getSigners();
+        deployerAddr = await deployer.getAddress();
         account1Addr = await account1.getAddress();
         account2Addr = await account2.getAddress();
         BadiumFactory = await ethers.getContractFactory("Badium");
@@ -53,8 +53,8 @@ describe("Badium Token Deployment", async() => {
 describe('Test Badium token standard ERC20 features', async() => {
     let balance1Before, balance2Before, balanceOwnerBefore, totalSupplyBefore;
     before('', async() => {
-        [owner, account1, account2] = await ethers.getSigners();
-        ownerAddr = await owner.getAddress();
+        [deployer, account1, account2] = await ethers.getSigners();
+        deployerAddr = await deployer.getAddress();
         account1Addr = await account1.getAddress();
         account2Addr = await account2.getAddress();
         BadiumFactory = await ethers.getContractFactory("Badium");
@@ -71,7 +71,7 @@ describe('Test Badium token standard ERC20 features', async() => {
     beforeEach('update balances', async() => {
         balance1Before = await badium.balanceOf(account1Addr);
         balance2Before = await badium.balanceOf(account2Addr);
-        balanceOwnerBefore = await badium.balanceOf(ownerAddr);
+        balanceOwnerBefore = await badium.balanceOf(deployerAddr);
         totalSupplyBefore = await badium.totalSupply();
     });
     it('Verify initial balances', async() => {
@@ -92,10 +92,10 @@ describe('Test Badium token standard ERC20 features', async() => {
     });
     it('Verify approve allow so to transfer funds from another account', async() => {
         const amount = 100;
-        await badium.connect(account1).approve(ownerAddr, amount);
-        expect((await badium.allowance(account1Addr, ownerAddr)).toString()).to.equal(amount.toString());
-        await badium.connect(owner).transferFrom(account1Addr, account2Addr, amount);
-        expect((await badium.allowance(account1Addr, ownerAddr)).toNumber()).to.equal(0);
+        await badium.connect(account1).approve(deployerAddr, amount);
+        expect((await badium.allowance(account1Addr, deployerAddr)).toString()).to.equal(amount.toString());
+        await badium.connect(deployer).transferFrom(account1Addr, account2Addr, amount);
+        expect((await badium.allowance(account1Addr, deployerAddr)).toNumber()).to.equal(0);
     });
 
 });
