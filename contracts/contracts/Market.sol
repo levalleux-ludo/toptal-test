@@ -42,16 +42,13 @@ contract Market is Ownable {
      *
      */
     function buy(uint256 amount) external payable {
-        console.log("buy() msg.value", msg.value);
         uint256 requestedPrice = computePrice(amount);
-        console.log("buy() requestedPrice", requestedPrice);
         require(
             (msg.value >= requestedPrice),
             "Market: Transaction payment is too low."
         );
         require(Badium(tokenContract).transfer(msg.sender, amount));
         if (msg.value > requestedPrice) {
-            console.log("payback", msg.value - requestedPrice);
             msg.sender.transfer(msg.value - requestedPrice);
         }
     }

@@ -57,9 +57,7 @@ describe('Buying token/token price', async() => {
         const amount_bad = 15.5;
         const amount_bad_unit = BigNumber.from(10).pow(decimals).mul(amount_bad * 1000000).div(1000000);
         const expected_price = await market.computePrice(amount_bad_unit);
-        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         await market.connect(account2).buy(amount_bad_unit, { value: expected_price, gasPrice: 0 });
-        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         const ethBalance2After = await account2.getBalance()
         expect(ethBalance2After.eq(ethBalance2Before.sub(expected_price))).to.be.true;
         expect((await badium.balanceOf(account2Addr)).toString()).to.equal(badBalance2Before.add(amount_bad_unit).toString())
@@ -67,7 +65,6 @@ describe('Buying token/token price', async() => {
     it('When a buyer pay more than the requested price, the surplus is paid back', async() => {
         const ethBalance2Before = await account2.getBalance();
         const badBalance2Before = await badium.balanceOf(account2Addr);
-        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         const tokenPrice = await market.tokenPrice();
         const amount_bad = 15.5;
         const amount_bad_unit = BigNumber.from(10).pow(decimals).mul(amount_bad * 1000000).div(1000000);
@@ -80,7 +77,6 @@ describe('Buying token/token price', async() => {
     it('A user can not buy a given amount of tokens if he pays less than the expected price', async() => {
         const ethBalance2Before = await account2.getBalance();
         const badBalance2Before = await badium.balanceOf(account2Addr);
-        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         const tokenPrice = await market.tokenPrice();
         const amount_bad = 15.5;
         const amount_bad_unit = BigNumber.from(10).pow(decimals).mul(amount_bad * 1000000).div(1000000);
@@ -91,7 +87,6 @@ describe('Buying token/token price', async() => {
     it('A user can not buy a given amount of tokens if his ETH balance is less than the expected price', async() => {
         const ethBalance2Before = await account2.getBalance();
         const badBalance2Before = await badium.balanceOf(account2Addr);
-        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         const tokenPrice = await market.tokenPrice();
         const amount_bad = 15.5;
         const amount_bad_unit = BigNumber.from(10).pow(decimals).mul(amount_bad * 1000000).div(1000000);
@@ -114,11 +109,8 @@ describe('Buying token/token price', async() => {
         const tokenPrice = await market.tokenPrice();
         const amount_bad_unit = 51 * 10 ** 6;
         const expected_price = await market.computePrice(amount_bad_unit);
-        console.log(amount_bad_unit, tokenPrice.toString(), expected_price.toString());
         // First purchase order is expected to complete
-        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         await market.connect(account2).buy(amount_bad_unit, { value: expected_price });
-        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         // Sencond order is expected to fail because there is not enough remaining tokens
         await expect(market.connect(account2).buy(amount_bad_unit, { value: expected_price })).to.be.revertedWith('ERC20: transfer amount exceeds balance');
     });
@@ -134,18 +126,15 @@ describe('Buying token/token price', async() => {
     });
     it('Another user cannot withdraw the contract balance', async() => {
         const contractBalanceBefore = await ethers.provider.getBalance(market.address);
-        console.log('Withdrawing funds from Market contract', contractBalanceBefore.toString());
         expect(contractBalanceBefore.gt(0)).to.be.true;
         const userBalanceBefore = await account2.getBalance();
         await expect(market.connect(account2).withdraw()).to.be.revertedWith(revertMessage('Ownable: caller is not the owner'));
         const userBalanceAfter = await account2.getBalance();
-        console.log('account2 balance', userBalanceBefore.toString(), userBalanceAfter.toString())
         expect(userBalanceAfter.gt(userBalanceBefore)).to.be.false;
         expect((await ethers.provider.getBalance(market.address)).eq(contractBalanceBefore)).to.be.true;
     });
     it('The owner can withdraw the contract balance', async() => {
         const contractBalanceBefore = await ethers.provider.getBalance(market.address);
-        console.log('Withdrawing funds from Market contract', contractBalanceBefore.toString());
         expect(contractBalanceBefore.gt(0)).to.be.true;
         const deployerBalanceBefore = await deployer.getBalance();
         await market.connect(deployer).withdraw();
