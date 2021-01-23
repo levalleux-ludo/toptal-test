@@ -13,6 +13,10 @@ if (!process.env.MNEMONIC) {
     throw new Error("Please set your MNEMONIC in a .env file");
 }
 
+if (!process.env.INFURA_API_KEY) {
+    throw new Error("Please set your INFURA_API_KEY in a .env file");
+}
+
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -64,7 +68,17 @@ module.exports = {
                 mnemonic: process.env.MNEMONIC,
                 path: "m/44'/60'/0'/0",
             },
-        }
+        },
+        goerli: {
+            chainId: 5,
+            url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
+            accounts: {
+                count: 10,
+                initialIndex: 0,
+                mnemonic: process.env.MNEMONIC,
+                path: "m/44'/60'/0'/0",
+            },
+        },
     },
     docgen: {
         path: './docs',

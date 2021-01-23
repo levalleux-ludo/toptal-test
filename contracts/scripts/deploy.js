@@ -4,6 +4,7 @@
 // When running the script with `hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 const { ethers } = require("hardhat");
+const { getBalanceAsNumber } = require('../test/utils');
 const hre = require("hardhat");
 
 const tokenName = 'Badium';
@@ -19,6 +20,10 @@ async function main() {
     // If this script is run directly using `node` you may want to call compile 
     // manually to make sure everything is compiled
     // await hre.run('compile');
+
+    const [deployer] = await ethers.getSigners();
+    const balance_before = await deployer.getBalance();
+    console.log('Deployer address', await deployer.getAddress(), 'balance', getBalanceAsNumber(balance_before, 18, 4));
 
     // We get the contract to deploy
     const BadiumFactory = await hre.ethers.getContractFactory("Badium");
@@ -43,6 +48,10 @@ async function main() {
 
     await badium.setBuyerContract(market.address);
     console.log("Badium:setBuyerContract ->", market.address);
+
+    const balance_after = await deployer.getBalance();
+    console.log('Paid fees', getBalanceAsNumber(balance_before.sub(balance_after), 18, 4), 'new balance', getBalanceAsNumber(balance_after, 18, 4));
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere
