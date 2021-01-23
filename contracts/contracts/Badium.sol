@@ -28,6 +28,9 @@ contract Badium is Ownable, ERC20Burnable {
     _setupDecimals(decimals_);
   }
 
+  /**
+  * @dev Set the buyer contract that is allowed to transfer token to a recipient that is not in receivers list
+   */
   function setBuyerContract(address buyerContract_) external onlyOwner {
     buyerContract = buyerContract_;
   }
@@ -86,22 +89,37 @@ contract Badium is Ownable, ERC20Burnable {
         return true;
     }
 
+  /**
+  * @dev Allow the specified account to receive BAD token from other users
+   */
     function addReceiver(address receiver) external onlyOwner {
       receiversSet.add(receiver);
     }
 
+  /**
+  * @dev Deny the specified account from receiving BAD token from other users
+   */
     function removeReceiver(address receiver) external onlyOwner {
       receiversSet.remove(receiver);
     }
 
+  /**
+  * @dev Number of accounts allowed to receive BAD token from other users
+   */
     function nbReceivers() public view returns (uint256) {
       return receiversSet.length();
     }
 
+  /**
+  * @dev Whether the specified account is allwoed to receive BAD token from other users
+   */
     function canReceive(address account) public view returns (bool) {
       return receiversSet.contains(account);
     }
 
+  /**
+  * @dev Return the Nth account from the list of those allowed to receive BAD token from other users
+   */
     function getReceiverAtIndex(uint256 index) external view returns (address) {
       return receiversSet.at(index);
     }

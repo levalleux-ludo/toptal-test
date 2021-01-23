@@ -53,16 +53,35 @@ contract Market is Ownable {
         }
     }
 
+    /** 
+    * @dev Compute the price of a given amount of BAD token
+     *
+     * Arguments:
+     * - amount: the amount of token to be quoted in base units (times the token decimals)
+     *
+     */
     function computePrice(uint256 amount) public view returns (uint256 requestedPrice) {
         uint256 decimals = Badium(tokenContract).decimals();
         requestedPrice = amount.mul(tokenPrice).div(10**decimals);
 
     }
+
+    /**
+    * @dev Allow the contract's owner to withdraw the funds owned by the contract
+     */
     function withdraw() external onlyOwner {
         require(address(this).balance > 0, "Market: No funds to withdraw");
         msg.sender.transfer(address(this).balance);
     }
 
+
+    /**
+    * @dev Allow the contract's owner to set the unit price of a BAD token
+    *
+    * Arguments:
+    * - newTokenPrice: the price of a BAD token in wei
+    *
+    */
     function setTokenPrice(uint256 newTokenPrice) external onlyOwner {
         tokenPrice = newTokenPrice;
         // TODO raise event ?
