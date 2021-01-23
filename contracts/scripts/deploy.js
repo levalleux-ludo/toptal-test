@@ -22,8 +22,6 @@ async function main() {
 
     // We get the contract to deploy
     const BadiumFactory = await hre.ethers.getContractFactory("Badium");
-    const [deployer] = await ethers.getSigners();
-    const initialOwner = await deployer.getAddress();
     const badium = await BadiumFactory.deploy(
         tokenName,
         tokenSymbol,
@@ -33,7 +31,7 @@ async function main() {
     console.log("Badium deployed to:", badium.address);
 
     const MarketFactory = await ethers.getContractFactory("Market");
-    const market = await MarketFactory.deploy();
+    const market = await MarketFactory.deploy(tokenPrice, badium.address);
     await market.deployed();
     console.log("Market deployed to:", market.address);
 
@@ -42,6 +40,9 @@ async function main() {
         hre.ethers.BigNumber.from(initialSupply).mul(hre.ethers.BigNumber.from(10).pow(decimals))
     );
     console.log("Initial Supply minted to:", market.address);
+
+    await badium.setBuyerContract(market.address);
+    console.log("Badium:setBuyerContract ->", market.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
