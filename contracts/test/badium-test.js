@@ -68,11 +68,14 @@ describe('Test Badium token standard ERC20 features', async() => {
     beforeEach('update balances', async() => {
         balance1Before = await badium.balanceOf(account1Addr);
         balance2Before = await badium.balanceOf(account2Addr);
-        balanceOwnerBefore = await badium.balanceOf(deployerAddr);
+        balanceDeployerBefore = await badium.balanceOf(deployerAddr);
         totalSupplyBefore = await badium.totalSupply();
+        // Requirement: recipient accounts must be in eligible receivers list
+        await badium.connect(deployer).addReceiver(account1Addr);
+        await badium.connect(deployer).addReceiver(account2Addr);
     });
     it('Verify initial balances', async() => {
-        expect(balanceOwnerBefore.toNumber()).to.equal(0);
+        expect(balanceDeployerBefore.toNumber()).to.equal(0);
         expect(balance1Before.toString()).to.equal(initialSupply.toString() + '0'.repeat(decimals));
         expect(balance2Before.toNumber()).to.equal(0);
     });
@@ -89,10 +92,17 @@ describe('Test Badium token standard ERC20 features', async() => {
     });
     it('Verify approve allow so to transfer funds from another account', async() => {
         const amount = 100;
-        await badium.connect(account1).approve(deployerAddr, amount);
-        expect((await badium.allowance(account1Addr, deployerAddr)).toString()).to.equal(amount.toString());
-        await badium.connect(deployer).transferFrom(account1Addr, account2Addr, amount);
-        expect((await badium.allowance(account1Addr, deployerAddr)).toNumber()).to.equal(0);
+        await badium.connect(account1).approve(account2Addr, amount);
+        expect((await badium.allowance(account1Addr, account2Addr)).toString()).to.equal(amount.toString());
+        await badium.connect(account2).transferFrom(account1Addr, account2Addr, amount);
+        expect((await badium.allowance(account1Addr, account2Addr)).toNumber()).to.equal(0);
+    });
+    it('Verify insufficient allowance does not allow so to transfer funds from another account', async() => {
+        const amount = 100;
+        await badium.connect(account1).approve(account2Addr, amount - 1);
+        expect((await badium.allowance(account1Addr, account2Addr)).lt(amount)).to.be.true;
+        await expect(badium.connect(account2).transferFrom(account1Addr, account2Addr, amount)).to.be.revertedWith(revertMessage('ERC20: transfer amount exceeds allowance'));
+        expect((await badium.allowance(account1Addr, account2Addr)).eq(amount - 1)).to.be.true;
     });
 
 });
@@ -163,5 +173,111 @@ describe('Badium total supply / mint / burn', async() => {
         expect((await badium.totalSupply()).toString()).to.equal(totalSupplyBefore.toString());
         expect((await badium.balanceOf(accountTo)).toString()).to.equal(balance1Before.toString());
     });
+
+});
+
+describe('Badium Token Transfer Features', async() => {
+    before('', async() => {
+        await initTestVariables();
+        await createContract();
+    });
+    beforeEach('update balances', async() => {
+        balance1Before = await badium.balanceOf(account1Addr);
+        balance2Before = await badium.balanceOf(account2Addr);
+        balanceDeployerBefore = await badium.balanceOf(deployerAddr);
+        totalSupplyBefore = await badium.totalSupply();
+    });
+    it('Verify initial balances', async() => {
+        expect(balanceDeployerBefore.toNumber()).to.equal(0);
+        expect(balance1Before.toString()).to.equal(initialSupply.toString() + '0'.repeat(decimals));
+        expect(balance2Before.toNumber()).to.equal(0);
+    });
+    it('The owner can transfer N tokens from Addr1 to Addr2', async() => {
+        const amount = 100;
+        expect(balance1Before.gt(0)).to.be.true;
+        expect(balance2Before.eq(0)).to.be.true;
+        await badium.connect(deployer).transferFrom(account1Addr, account2Addr, amount);
+        const balance1After = await badium.balanceOf(account1Addr);
+        const balance2After = await badium.balanceOf(account2Addr);
+        expect(balance1Before.sub(balance1After).eq(amount)).to.be.true;
+        expect(balance2After.eq(amount)).to.be.true;
+        expect((await badium.totalSupply()).eq(totalSupplyBefore)).to.be.true;
+    });
+    it('The owner can add an account in the list of eligible receivers', async() => {
+        expect(await badium.canReceive(account1Addr)).to.be.false;
+        const nbReceivers = await await badium.nbReceivers();
+        await badium.connect(deployer).addReceiver(account1Addr);
+        expect(await badium.canReceive(account1Addr)).to.be.true;
+        expect((await badium.nbReceivers()).eq(nbReceivers.add(1))).to.be.true;
+        expect(await badium.getReceiverAtIndex(0)).to.equal(account1Addr);
+    });
+    it('Another user can not add a receiver the list of eligible receivers', async() => {
+        expect(await badium.canReceive(account2Addr)).to.be.false;
+        const nbReceivers = await await badium.nbReceivers();
+        await expect(badium.connect(account1).addReceiver(account2Addr)).to.be.revertedWith(revertMessage('Ownable: caller is not the owner'));
+        expect(await badium.canReceive(account2Addr)).to.be.false;
+        expect((await badium.nbReceivers()).eq(nbReceivers)).to.be.true;
+        await badium.connect(deployer).addReceiver(account2Addr);
+        expect(await badium.canReceive(account2Addr)).to.be.true;
+        expect((await badium.nbReceivers()).eq(nbReceivers.add(1))).to.be.true;
+        expect(await badium.getReceiverAtIndex(nbReceivers)).to.equal(account2Addr);
+    });
+    it('addReceiver robustness', async() => {
+        // verify that adding a receiver already present has no effect
+        expect(await badium.canReceive(account1Addr)).to.be.true;
+        const nbReceivers = await await badium.nbReceivers();
+        expect(await badium.getReceiverAtIndex(0)).to.equal(account1Addr);
+        await badium.connect(deployer).addReceiver(account1Addr);
+        expect(await badium.canReceive(account1Addr)).to.be.true;
+        expect((await badium.nbReceivers()).eq(nbReceivers)).to.be.true;
+        expect(await badium.getReceiverAtIndex(0)).to.equal(account1Addr);
+    });
+    it('The owner can remove an account in the list of eligible receivers', async() => {
+        expect(await badium.canReceive(account1Addr)).to.be.true;
+        expect(await badium.canReceive(account2Addr)).to.be.true;
+        const nbReceivers = await await badium.nbReceivers();
+        await badium.connect(deployer).removeReceiver(account1Addr);
+        expect(await badium.canReceive(account1Addr)).to.be.false;
+        expect(await badium.canReceive(account2Addr)).to.be.true;
+        expect(await badium.getReceiverAtIndex(0)).to.equal(account2Addr);
+        expect((await badium.nbReceivers()).eq(nbReceivers.sub(1))).to.be.true;
+        await expect(badium.getReceiverAtIndex(nbReceivers.sub(1))).to.be.revertedWith(revertMessage('EnumerableSet: index out of bounds'));
+    });
+    it('removeReceiver robustness', async() => {
+        // verify that removing a receiver already absent has no effect
+        expect(await badium.canReceive(account1Addr)).to.be.false;
+        const nbReceivers = await await badium.nbReceivers();
+        await badium.connect(deployer).removeReceiver(account1Addr);
+        expect(await badium.canReceive(account1Addr)).to.be.false;
+        expect((await badium.nbReceivers()).eq(nbReceivers)).to.be.true;
+    });
+    it('Another user can not remove a receiver from the list of eligible receivers', async() => {
+        expect(await badium.canReceive(account2Addr)).to.be.true;
+        await expect(badium.connect(account1).removeReceiver(account2Addr)).to.be.revertedWith(revertMessage('Ownable: caller is not the owner'));
+        expect(await badium.canReceive(account2Addr)).to.be.true;
+    });
+    it('A user cannot transfer his own tokens to another address if not in eligible receiver', async() => {
+        expect(balance2Before.gt(0)).to.be.true;
+        expect(await badium.canReceive(account1Addr)).to.be.false;
+        await expect(badium.connect(account2).transfer(account1Addr, balance2Before)).to.be.revertedWith(revertMessage('Badium: recipient not in eligible receivers'));
+        expect((await badium.balanceOf(account2Addr)).eq(balance2Before)).to.be.true;
+    })
+    it('A user can transfer his own tokens to another address if in eligible receiver', async() => {
+        await badium.connect(deployer).addReceiver(account1Addr);
+        expect(balance2Before.gt(0)).to.be.true;
+        expect(await badium.canReceive(account1Addr)).to.be.true;
+        await badium.connect(account2).transfer(account1Addr, balance2Before);
+        expect((await badium.balanceOf(account2Addr)).eq(0)).to.be.true;
+        expect((await badium.balanceOf(account1Addr)).eq(balance1Before.add(balance2Before))).to.be.true;
+    })
+    it('The owner can transfer N tokens from Addr1 to Addr2 even if Addr2 is not in eligible receiver', async() => {
+        const amount = 100;
+        await badium.connect(deployer).removeReceiver(account2Addr);
+        expect(await badium.canReceive(account2Addr)).to.be.false;
+        expect(balance1Before.gt(amount)).to.be.true;
+        await badium.connect(deployer).transferFrom(account1Addr, account2Addr, amount);
+        expect((await badium.balanceOf(account2Addr)).eq(balance2Before.add(amount))).to.be.true;
+        expect((await badium.balanceOf(account1Addr)).eq(balance1Before.sub(amount))).to.be.true;
+    })
 
 })

@@ -47,7 +47,7 @@ contract Market is Ownable {
         console.log("buy() requestedPrice", requestedPrice);
         require(
             (msg.value >= requestedPrice),
-            "Transaction payment is too low."
+            "Market: Transaction payment is too low."
         );
         require(Badium(tokenContract).transfer(msg.sender, amount));
         if (msg.value > requestedPrice) {

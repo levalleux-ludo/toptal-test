@@ -35,6 +35,7 @@ async function createContracts() {
         market.address,
         hre.ethers.BigNumber.from(initialSupply).mul(hre.ethers.BigNumber.from(10).pow(decimals))
     );
+    await badium.connect(deployer).setBuyerContract(market.address);
 }
 
 describe('Buying token/token price', async() => {
@@ -56,10 +57,54 @@ describe('Buying token/token price', async() => {
         const amount_bad = 15.5;
         const amount_bad_unit = BigNumber.from(10).pow(decimals).mul(amount_bad * 1000000).div(1000000);
         const expected_price = await market.computePrice(amount_bad_unit);
-        await market.connect(account2).buy(amount_bad_unit, { value: expected_price });
+        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
+        await market.connect(account2).buy(amount_bad_unit, { value: expected_price, gasPrice: 0 });
+        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         const ethBalance2After = await account2.getBalance()
-        expect(ethBalance2After.lt(ethBalance2Before.sub(expected_price))).to.be.true;
+        expect(ethBalance2After.eq(ethBalance2Before.sub(expected_price))).to.be.true;
         expect((await badium.balanceOf(account2Addr)).toString()).to.equal(badBalance2Before.add(amount_bad_unit).toString())
+    });
+    it('When a buyer pay more than the requested price, the surplus is paid back', async() => {
+        const ethBalance2Before = await account2.getBalance();
+        const badBalance2Before = await badium.balanceOf(account2Addr);
+        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
+        const tokenPrice = await market.tokenPrice();
+        const amount_bad = 15.5;
+        const amount_bad_unit = BigNumber.from(10).pow(decimals).mul(amount_bad * 1000000).div(1000000);
+        const expected_price = await market.computePrice(amount_bad_unit);
+        await market.connect(account2).buy(amount_bad_unit, { value: expected_price.add(12), gasPrice: 0 });
+        const ethBalance2After = await account2.getBalance()
+        expect(ethBalance2After.eq(ethBalance2Before.sub(expected_price))).to.be.true;
+        expect((await badium.balanceOf(account2Addr)).toString()).to.equal(badBalance2Before.add(amount_bad_unit).toString())
+    });
+    it('A user can not buy a given amount of tokens if he pays less than the expected price', async() => {
+        const ethBalance2Before = await account2.getBalance();
+        const badBalance2Before = await badium.balanceOf(account2Addr);
+        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
+        const tokenPrice = await market.tokenPrice();
+        const amount_bad = 15.5;
+        const amount_bad_unit = BigNumber.from(10).pow(decimals).mul(amount_bad * 1000000).div(1000000);
+        const expected_price = await market.computePrice(amount_bad_unit);
+        await expect(market.connect(account2).buy(amount_bad_unit, { value: expected_price.sub(1), gasPrice: 0 })).to.be.revertedWith(revertMessage('Market: Transaction payment is too low.'));
+        expect((await badium.balanceOf(account2Addr)).eq(badBalance2Before)).to.be.true;
+    });
+    it('A user can not buy a given amount of tokens if his ETH balance is less than the expected price', async() => {
+        const ethBalance2Before = await account2.getBalance();
+        const badBalance2Before = await badium.balanceOf(account2Addr);
+        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
+        const tokenPrice = await market.tokenPrice();
+        const amount_bad = 15.5;
+        const amount_bad_unit = BigNumber.from(10).pow(decimals).mul(amount_bad * 1000000).div(1000000);
+        const expected_price = await market.computePrice(amount_bad_unit);
+        await account2.sendTransaction({
+            to: account1Addr,
+            value: ethBalance2Before.sub(expected_price.add(1))
+        });
+        expect((await account2.getBalance()).lt(expected_price)).to.be.true;
+        try {
+            await market.connect(account2).buy(amount_bad_unit, { value: expected_price, gasPrice: 0 });
+        } catch {}
+        expect((await badium.balanceOf(account2Addr)).eq(badBalance2Before)).to.be.true;
     });
     it('A user cannot buy more tokens that the balance of the contract itself (total supply – amount of tokens already sold / transferred)', async() => {
         // Empty the token contract and mint only a few amount of token
@@ -71,7 +116,9 @@ describe('Buying token/token price', async() => {
         const expected_price = await market.computePrice(amount_bad_unit);
         console.log(amount_bad_unit, tokenPrice.toString(), expected_price.toString());
         // First purchase order is expected to complete
+        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         await market.connect(account2).buy(amount_bad_unit, { value: expected_price });
+        console.log('availableBadTokens', (await badium.balanceOf(market.address)).toString());
         // Sencond order is expected to fail because there is not enough remaining tokens
         await expect(market.connect(account2).buy(amount_bad_unit, { value: expected_price })).to.be.revertedWith('ERC20: transfer amount exceeds balance');
     });
@@ -112,6 +159,6 @@ describe('Buying token/token price', async() => {
         const contractBalanceBefore = await ethers.provider.getBalance(market.address);
         expect(contractBalanceBefore.eq(0)).to.be.true;
         await expect(market.connect(deployer).withdraw()).to.be.revertedWith(revertMessage('Market: No funds to withdraw'));
+    });
 
-    })
 })
