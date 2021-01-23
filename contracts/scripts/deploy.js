@@ -10,6 +10,7 @@ const tokenName = 'Badium';
 const tokenSymbol = 'BAD';
 const decimals = 18;
 const initialSupply = 10000000;
+const tokenPrice = ethers.constants.WeiPerEther.div(100); // 0.01 ETH
 
 async function main() {
     // Hardhat always runs the compile task when running scripts with its command
@@ -26,9 +27,7 @@ async function main() {
     const badium = await BadiumFactory.deploy(
         tokenName,
         tokenSymbol,
-        decimals,
-        hre.ethers.BigNumber.from(initialSupply).mul(hre.ethers.BigNumber.from(10).pow(decimals)),
-        initialOwner
+        decimals
     );
     await badium.deployed();
     console.log("Badium deployed to:", badium.address);
@@ -38,6 +37,11 @@ async function main() {
     await market.deployed();
     console.log("Market deployed to:", market.address);
 
+    await badium.mint(
+        market.address,
+        hre.ethers.BigNumber.from(initialSupply).mul(hre.ethers.BigNumber.from(10).pow(decimals))
+    );
+    console.log("Initial Supply minted to:", market.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

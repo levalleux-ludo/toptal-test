@@ -1,4 +1,7 @@
 require("@nomiclabs/hardhat-waffle");
+require('hardhat-docgen');
+
+
 const dotenvConfig = require('dotenv').config;
 // import { config as dotenvConfig } from "dotenv";
 const resolve = require('path').resolve;
@@ -61,5 +64,10 @@ module.exports = {
                 path: "m/44'/60'/0'/0",
             },
         }
+    },
+    docgen: {
+        path: './docs',
+        clear: true,
+        runOnCompile: true,
     },
 };

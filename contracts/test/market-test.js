@@ -15,8 +15,9 @@ async function initTestVariables() {
     MarketFactory = await ethers.getContractFactory("Market");
 }
 async function createContract() {
-    market = await MarketFactory.deploy();
-
+    const tokenPrice = ethers.constants.WeiPerEther.div(100); // 0.01 ETH
+    const tokenContract = '0x' + '0'.repeat(40);
+    market = await MarketFactory.deploy(tokenPrice, tokenContract);
     await market.deployed();
 }
 
@@ -38,6 +39,9 @@ describe('Market Ownership', async() => {
     it('Verify initial owner', async() => {
         expect(await market.owner()).to.equal(deployerAddr);
     });
+    it('Verify token price', async() => {
+        expect((await market.tokenPrice()).toString()).to.equal('1' + '0'.repeat(16));
+    });
     it('The owner can transfer the contract ownership to another account', async() => {
         await market.connect(deployer).transferOwnership(account1Addr);
         expect(await market.owner()).to.equal(account1Addr);
@@ -46,3 +50,22 @@ describe('Market Ownership', async() => {
         await expect(market.connect(deployer).transferOwnership(account2Addr)).to.be.revertedWith(revertMessage('Ownable: caller is not the owner'));
     });
 });
+
+describe('Market change tokenPrice', async() => {
+    before('', async() => {
+        await initTestVariables();
+        await createContract();
+    });
+    it('The owner can change the token price (in wei)', async() => {
+        expect((await market.tokenPrice()).toString()).to.equal('1' + '0'.repeat(16));
+        const newPrice = ethers.constants.WeiPerEther.div(50); // 0.02 ETH
+        await market.connect(deployer).setTokenPrice(newPrice);
+        expect((await market.tokenPrice()).toString()).to.equal('2' + '0'.repeat(16));
+    });
+    it('Another user can not change the token price', async() => {
+        expect((await market.tokenPrice()).toString()).to.equal('2' + '0'.repeat(16));
+        const newPrice = ethers.constants.WeiPerEther.div(25); // 0.04 ETH
+        await expect(market.connect(account2).setTokenPrice(newPrice)).to.be.revertedWith(revertMessage('Ownable: caller is not the owner'));
+        expect((await market.tokenPrice()).toString()).to.equal('2' + '0'.repeat(16));
+    });
+})

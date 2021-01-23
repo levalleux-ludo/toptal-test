@@ -6,7 +6,8 @@
     "scripts": {
         "build": "hardhat compile",
         "test": "hardhat test",
-        "deploy": "hardhat run scripts/deploy.js"
+        "deploy": "hardhat run scripts/deploy.js",
+        "docgen": "hardhat docgen"
     },
     "keywords": [],
     "author": "",
@@ -17,7 +18,8 @@
         "chai": "^4.2.0",
         "ethereum-waffle": "^3.2.1",
         "ethers": "^5.0.26",
-        "hardhat": "^2.0.8"
+        "hardhat": "^2.0.8",
+        "hardhat-docgen": "^1.0.0"
     },
     "dependencies": {
         "@openzeppelin/contracts": "^3.3.0",

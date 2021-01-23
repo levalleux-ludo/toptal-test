@@ -27,11 +27,12 @@ async function createContract() {
     badium = await BadiumFactory.deploy(
         tokenName,
         tokenSymbol,
-        decimals,
-        hre.ethers.BigNumber.from(initialSupply).mul(hre.ethers.BigNumber.from(10).pow(decimals)),
-        initialOwner);
-
+        decimals);
     await badium.deployed();
+    await badium.mint(
+        initialOwner,
+        hre.ethers.BigNumber.from(initialSupply).mul(hre.ethers.BigNumber.from(10).pow(decimals))
+    );
 }
 
 describe("Badium Token Deployment", async() => {
