@@ -149,5 +149,4 @@ contract Badium is Ownable, ERC20Burnable {
     }
   }
 
-
 }

@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-waffle");
 require('hardhat-docgen');
+require('hardhat-contract-sizer');
 
 
 const dotenvConfig = require('dotenv').config;
@@ -69,5 +70,10 @@ module.exports = {
         path: './docs',
         clear: true,
         runOnCompile: true,
+    },
+    contractSizer: {
+        alphaSort: true,
+        runOnCompile: true,
+        disambiguatePaths: false,
     },
 };
